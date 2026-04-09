@@ -9,58 +9,46 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @Environment(\.modelContext) private var context
+    @Query private var stocks: [Stock]
+    @State private var showAddStock = false
 
     var body: some View {
-        NavigationSplitView {
+        NavigationStack {
             List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+                if stocks.isEmpty {
+                    ContentUnavailableView("Портфель пуст", systemImage: "chart.line.uptrend.xyaxis", description: Text("Добавьте акцию, чтобы начать отслеживать свои инвестиции"))
+                } else {
+                    ForEach(stocks) { stock in
+                        StockRowView(stock: stock)
                     }
+                    .onDelete(perform: deleteStock)
                 }
-                .onDelete(perform: deleteItems)
             }
-#if os(macOS)
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-#endif
+            .navigationTitle("Портфель")
             .toolbar {
-#if os(iOS)
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-#endif
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showAddStock = true
+                    } label: {
+                        Image(systemName: "plus")
                     }
                 }
             }
-        } detail: {
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+            .sheet(isPresented: $showAddStock) {
+                AddStockView()
             }
+        }
+    }
+
+    private func deleteStock(at offsets: IndexSet) {
+        for index in offsets {
+            context.delete(stocks[index])
         }
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(for: Stock.self, inMemory: true)
 }

@@ -13,6 +13,7 @@ struct FinancialTrackerApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Stock.self,
+            Dividend.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
