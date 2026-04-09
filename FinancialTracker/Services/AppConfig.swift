@@ -6,6 +6,6 @@
 //
 
 enum AppConfig {
-    static let finnhubAPIkey = "d7bp531r01qo9pqufacgd7bp531r01qo9pqufad0"
+    static let finnhubAPIkey = ProcessInfo.processInfo.environment["FINNHUB_API_KEY"] ?? ""
     static let baseURL = "https://finnhub.io/api/v1"
 }
