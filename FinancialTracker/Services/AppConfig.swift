@@ -8,5 +8,6 @@ import Foundation
 
 enum AppConfig {
     static let finnhubAPIkey = Bundle.main.object(forInfoDictionaryKey: "FINNHUB_API_KEY") as? String ?? ""
+    static let alphaVantageAPIKey = Bundle.main.object(forInfoDictionaryKey: "ALPHA_VANTAGE_API_KEY") as? String ?? ""
     static let baseURL = "https://finnhub.io/api/v1"
 }

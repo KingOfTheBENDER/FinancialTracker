@@ -23,9 +23,11 @@ struct AnalyticsView: View {
         grouped[month, default: 0] += item.amount
     }
     
-    // Сортируем по дате
+    // Берём только последние 12 месяцев от сегодня
+    let twelveMonthsAgo = calendar.date(byAdding: .month, value: -12, to: Date()) ?? Date()
     return grouped
       .map { (month: $0.key, total: $0.value) }
+      .filter { $0.month >= twelveMonthsAgo }
       .sorted { $0.month < $1.month }
   }
 

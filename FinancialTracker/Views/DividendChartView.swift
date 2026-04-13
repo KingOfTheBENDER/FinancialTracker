@@ -19,16 +19,17 @@ struct DividendChartView: View {
           .cornerRadius(4)
         }
         .chartXAxis {
-          AxisMarks(values: .stride(by: .month)) {
-            value in AxisValueLabel(format: .dateTime.month(.abbreviated))
+          AxisMarks(values: .stride(by: .month, count: 3)) { value in
+            AxisValueLabel(format: .dateTime.month(.abbreviated).year(.twoDigits))
+                .font(.system(size: 9))
           }
         }
         .chartYAxis {
           AxisMarks {
             value in AxisValueLabel {
               if let amount = value.as(Double.self) {
-                Text("$\(amount, specifier: "%.0f")")
-                .font(.caption)
+                Text(String(format: "$%.0f", amount))
+                  .font(.caption2)
               }
             }
           }

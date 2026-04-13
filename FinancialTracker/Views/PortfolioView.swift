@@ -12,6 +12,7 @@ struct PortfolioView: View {
     @Environment(\.modelContext) private var context
     @Query private var stocks: [Stock]
     @State private var showAddStock = false
+    @State private var viewModel = PortfolioViewModel()
 
     var body: some View {
         NavigationStack {
@@ -21,6 +22,9 @@ struct PortfolioView: View {
                 } else {
                     ForEach(stocks) { stock in
                         StockRowView(stock: stock)
+                            .task {
+                                await viewModel.loadDividends(for: stock, context: context)
+                            }
                     }
                     .onDelete(perform: deleteStock)
                 }
@@ -36,7 +40,7 @@ struct PortfolioView: View {
                 }
             }
             .sheet(isPresented: $showAddStock) {
-                AddStockView()
+                AddStockView(portfolioViewModel: viewModel)
             }
         }
     }

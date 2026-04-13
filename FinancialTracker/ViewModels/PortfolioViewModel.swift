@@ -9,35 +9,30 @@ import Foundation
 import SwiftData
 
 @Observable
+@MainActor
 final class PortfolioViewModel {
     var searchResults: [SearchResult] = []
     var isSearching = false
     var errorMessage: String?
-    
+
     private let service = FinnhubService()
-    private var searchTask: Task<Void, Never>?
-    
-    // Поиск акций по запросу
+
     func search(query: String) async {
-        // Отменяем предыдущий запрос если буква пришла быстро
-        searchTask?.cancel()
-        
-        searchTask = Task {
-            try? await Task.sleep(for: .milliseconds(300))
-            guard !Task.isCancelled else { return }
-            
-            guard !query.isEmpty else {
-                searchResults = []
-                return
-            }
-            
-            isSearching = true
-            do {
-                searchResults = try await service.searchStocks(query: query)
-            } catch {
-                errorMessage = "Ошибка поиска: \(error.localizedDescription)"
-                searchResults = []
-            }
+        guard !query.isEmpty else {
+            searchResults = []
+            isSearching = false
+            return
+        }
+
+        do {
+            try await Task.sleep(for: .milliseconds(300))
+            searchResults = try await service.searchStocks(query: query)
+            isSearching = false
+        } catch is CancellationError {
+        } catch let error as URLError where error.code == .cancelled {
+        } catch {
+            errorMessage = error.localizedDescription
+            searchResults = []
             isSearching = false
         }
     }

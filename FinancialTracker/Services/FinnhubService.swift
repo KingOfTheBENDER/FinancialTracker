@@ -16,12 +16,27 @@ struct DividendData: Codable {
     let date: String
     let amount: Double
     let symbol: String
-    
+
     // Переименовываем symbol → ticker для единообразия
     enum CodingKeys: String, CodingKey {
         case date
         case amount
         case symbol
+    }
+}
+
+// Codable модели — структура ответа от Alpha Vantage
+struct AlphaDividendResponse: Codable {
+    let data: [AlphaDividendEntry]
+}
+
+struct AlphaDividendEntry: Codable {
+    let exDividendDate: String
+    let amount: String
+
+    enum CodingKeys: String, CodingKey {
+        case exDividendDate = "ex_dividend_date"
+        case amount
     }
 }
 
@@ -69,11 +84,19 @@ final class FinnhubService {
         return try JSONDecoder().decode(T.self, from: data)
     }
     
-    // Получить дивиденды по тикеру
+    // Получить дивиденды по тикеру (Alpha Vantage)
     func fetchDividends(ticker: String) async throws -> [DividendData] {
-        let endpoint = "/stock/dividend?symbol=\(ticker)"
-        let response: DividendResponse = try await request(endpoint)
-        return response.data
+        let urlString = "https://www.alphavantage.co/query?function=DIVIDENDS&symbol=\(ticker)&apikey=\(AppConfig.alphaVantageAPIKey)"
+        guard let url = URL(string: urlString) else { throw URLError(.badURL) }
+
+        let (data, _) = try await URLSession.shared.data(from: url)
+        let response = try JSONDecoder().decode(AlphaDividendResponse.self, from: data)
+
+        // Конвертируем AlphaDividendEntry → DividendData
+        return response.data.compactMap { entry in
+            guard let amount = Double(entry.amount) else { return nil }
+            return DividendData(date: entry.exDividendDate, amount: amount, symbol: ticker)
+        }
     }
     
     // Поиск акций по названию
