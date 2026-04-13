@@ -7,6 +7,6 @@
 import Foundation
 
 enum AppConfig {
-    static let finnhubAPIkey = ProcessInfo.processInfo.environment["FINNHUB_API_KEY"] ?? ""
+    static let finnhubAPIkey = Bundle.main.object(forInfoDictionaryKey: "FINNHUB_API_KEY") as? String ?? ""
     static let baseURL = "https://finnhub.io/api/v1"
 }

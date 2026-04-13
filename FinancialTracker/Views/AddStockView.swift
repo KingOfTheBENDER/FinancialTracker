@@ -5,41 +5,60 @@ struct AddStockView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
 
-    @State private var ticker = ""
-    @State private var companyName = ""
-    @State private var shares = ""
+    @State private var query = ""
+    @State private var viewModel = PortfolioViewModel()
 
     var body: some View {
-        NavigationStack {
-            Form {
-                TextField("Тикер (AAPL)", text: $ticker)
-                    .textInputAutocapitalization(.characters)
-                TextField("Название компании", text: $companyName)
-                TextField("Количество акций", text: $shares)
-                    .keyboardType(.decimalPad)
-            }
-            .navigationTitle("Новая акция")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Отмена") { dismiss() }
+            NavigationStack {
+                List {
+                    // Поле поиска
+                    TextField("Поиск: AAPL, Apple...", text: $query)
+                        .onChange(of: query) { _, newValue in
+                            Task {
+                                await viewModel.search(query: newValue)
+                            }
+                        }
+                    
+                    // Результаты поиска
+                    if viewModel.isSearching {
+                        ProgressView()  // спиннер — как ActivityIndicator в RN
+                    } else {
+                        ForEach(viewModel.searchResults) { result in
+                            Button {
+                                addStock(result)
+                            } label: {
+                                VStack(alignment: .leading) {
+                                    Text(result.symbol).font(.headline)
+                                    Text(result.description).font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Добавить") { saveStock() }
-                        .disabled(ticker.isEmpty || companyName.isEmpty || shares.isEmpty)
+                .navigationTitle("Добавить акцию")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Отмена") { dismiss() }
+                    }
                 }
             }
         }
-    }
 
-    private func saveStock() {
-        guard let sharesDouble = Double(shares) else { return }
+    private func addStock(_ result: SearchResult) {
         let stock = Stock(
-            ticker: ticker.uppercased(),
-            companyName: companyName,
-            shares: sharesDouble
+            ticker: result.symbol,
+            companyName: result.description,
+            shares: 1  // потом можно редактировать
         )
         context.insert(stock)
+        
+        // Загружаем дивиденды сразу после добавления
+        Task {
+            await viewModel.loadDividends(for: stock, context: context)
+        }
+        
         dismiss()
     }
 }
