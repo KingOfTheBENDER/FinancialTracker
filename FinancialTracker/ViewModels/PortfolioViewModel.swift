@@ -15,21 +15,31 @@ final class PortfolioViewModel {
     var errorMessage: String?
     
     private let service = FinnhubService()
+    private var searchTask: Task<Void, Never>?
     
     // Поиск акций по запросу
     func search(query: String) async {
-        guard !query.isEmpty else {
-            searchResults = []
-            return
+        // Отменяем предыдущий запрос если буква пришла быстро
+        searchTask?.cancel()
+        
+        searchTask = Task {
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            
+            guard !query.isEmpty else {
+                searchResults = []
+                return
+            }
+            
+            isSearching = true
+            do {
+                searchResults = try await service.searchStocks(query: query)
+            } catch {
+                errorMessage = "Ошибка поиска: \(error.localizedDescription)"
+                searchResults = []
+            }
+            isSearching = false
         }
-        isSearching = true
-        do {
-            searchResults = try await service.searchStocks(query: query)
-        } catch {
-            errorMessage = "Ошибка поиска: \(error.localizedDescription)"
-            searchResults = []
-        }
-        isSearching = false
     }
 
     // Загрузить дивиденды для акции и сохранить в БД
