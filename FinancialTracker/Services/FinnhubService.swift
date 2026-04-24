@@ -40,6 +40,19 @@ struct AlphaDividendEntry: Codable {
     }
 }
 
+// DTO для рыночных новостей Finnhub
+struct NewsItemDTO: Codable {
+    let id: Int
+    let category: String
+    let datetime: TimeInterval
+    let headline: String
+    let image: String?
+    let source: String
+    let summary: String
+    let url: String
+    let related: String?
+}
+
 // Модель для поиска акций
 struct SearchResponse: Codable {
     let result: [SearchResult]
@@ -104,5 +117,27 @@ final class FinnhubService {
         let endpoint = "/search?q=\(query)"
         let response: SearchResponse = try await request(endpoint)
         return response.result
+    }
+
+    // Получить рыночные новости по категории
+    func fetchMarketNews(category: NewsCategory) async throws -> [MarketNews] {
+        let endpoint = "/news?category=\(category.rawValue)"
+        let items: [NewsItemDTO] = try await request(endpoint)
+        return items.map { dto in
+            MarketNews(
+                id: dto.id,
+                articleCategory: dto.category,
+                datetime: Date(timeIntervalSince1970: dto.datetime),
+                headline: dto.headline,
+                image: dto.image.flatMap { $0.isEmpty ? nil : URL(string: $0) },
+                source: dto.source,
+                summary: dto.summary,
+                url: URL(string: dto.url) ?? URL(string: "https://finnhub.io")!,
+                relatedSymbols: (dto.related ?? "")
+                    .split(separator: ",")
+                    .map { $0.trimmingCharacters(in: .whitespaces) }
+                    .filter { !$0.isEmpty }
+            )
+        }
     }
 }

@@ -12,6 +12,11 @@ struct ContentView: View {
                 .tabItem {
                     Label("Аналитика", systemImage: "chart.bar.fill")
                 }
+
+            NewsView()
+                .tabItem {
+                    Label("Новости", systemImage: "newspaper.fill")
+                }
         }
     }
 }
